@@ -39,7 +39,7 @@ type alias ScoreData =
 init : ( Model, Cmd Msg )
 init =
     ( { players =
-            [ Player 0 "Elana" 27 Female
+            [ Player 0 "Elana" 12 Female
             , Player 1 "Sam" 17 Nonbinary
             , Player 2 "Sarah" 24 Female
             , Player 3 "Josh" 18 Male
@@ -50,6 +50,8 @@ init =
             , Player 8 "Sana" 12 Female
             , Player 9 "Ahmad" 68 Male
             , Player 10 "Prateek" 45 Male
+            , Player 11 "Joon" 89 Male
+            , Player 12 "Ken" 12 Male
             ]
       , scoreData =
             Dict.fromList
@@ -61,6 +63,11 @@ init =
                 , ( 5, [ 88, 87, 85, 88, 89 ] )
                 , ( 6, [ 55 ] )
                 , ( 7, [ 94, 82 ] )
+                , ( 8, [ 33, 89 ] )
+                , ( 9, [ 12, 14, 11 ] )
+                , ( 10, [ 4, 54, 23 ] )
+                , ( 11, [ 55, 77 ] )
+                , ( 12, [ 44, 76, 43 ] )
                 ]
       }
     , Cmd.none
@@ -97,28 +104,50 @@ view model =
         filterNoScores =
             getScores model >> List.isEmpty >> not
 
+        filterScoresOver threshold =
+            personalHighScore >> (>) threshold
+
+        comparePlayers getComparable a b =
+            compare (getComparable a) (getComparable b)
+
+        filterByGender gender =
+            .gender >> (==) gender
+
         topFemale =
             model.players
-                |> List.filter (\p -> p.gender == Female)
+                |> List.filter (filterByGender Female)
                 |> List.filter filterNoScores
                 |> List.sortWith (comparePlayers personalHighScore)
                 |> List.reverse
+                |> List.take 3
 
         childrenScoringOver50 =
             model.players
-                |> List.filter (\p -> p.age < 18 && personalHighScore p > 50)
+                |> List.filter (\p -> p.age < 18)
+                |> List.filter (filterScoresOver 50)
                 |> List.sortWith (comparePlayers personalHighScore)
                 |> List.reverse
+
+        worstMale =
+            model.players
+                |> List.filter (filterByGender Male)
+                |> List.filter filterNoScores
+                |> List.sortWith (comparePlayers personalHighScore)
+                |> List.take 3
     in
     div []
-        [ leaderBoard "Top 10 Female"
+        [ leaderBoard "Top 3 Female"
             "High Score"
             personalHighScore
             topFemale
         , leaderBoard "Children Scoring Over 50"
+            "Age"
+            (\p -> p.age)
+            childrenScoringOver50
+        , leaderBoard "Worst 3 Male"
             "High Score"
             personalHighScore
-            childrenScoringOver50
+            worstMale
         ]
 
 
@@ -166,11 +195,6 @@ playerView index getDatum player =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
-
-
-comparePlayers : (Player -> Int) -> Player -> Player -> Order
-comparePlayers getComparable player1 player2 =
-    compare (getComparable player1) (getComparable player2)
 
 
 getScores : Model -> Player -> List Int
